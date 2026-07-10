@@ -34,7 +34,7 @@ st.markdown("---")
 # --- القسم الثاني: الأدوية والروتين ---
 st.write("### 💊 أدوية وروتين اليوم")
 
-levo_label = "Levothyrox 50 µg" if is_levo_50 else "Levothyrox 25 µg"
+levo_label = "Levothyrox 50 µg" if is_levo_50 else "Levothyrox 50 µg"
 levo_done = st.checkbox(f"07:00 - {levo_label} (على الريق)")
 
 irbe_done = st.checkbox("08:00 - Irbésartan 300 mg")
