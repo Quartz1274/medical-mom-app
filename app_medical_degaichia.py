@@ -1,5 +1,7 @@
 import streamlit as st
 import datetime
+import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 # --- إعدادات واجهة التطبيق ---
 st.set_page_config(page_title="الرعاية الطبية للوالدة", page_icon="🩺", layout="centered")
@@ -8,12 +10,10 @@ st.markdown("تطبيق عائلي لمتابعة الأدوية والضغط")
 st.markdown("---")
 
 # --- الحساب التلقائي للجرعات المتناوبة ---
-# نحدد تاريخ اليوم الذي أخذت فيه 50 ميكروغرام ونادلوريك (9 جويلية 2026) كمرجع
 base_date = datetime.date(2026, 7, 9) 
 today = datetime.date.today()
 delta_days = (today - base_date).days
 
-# إذا كان الفرق عدداً زوجياً (مثل اليوم 0، بعد غد 2..) فالجرعة 50، وإلا 25
 is_levo_50 = (delta_days % 2 == 0)
 is_nadloric = (delta_days % 2 == 0)
 
@@ -34,7 +34,6 @@ st.markdown("---")
 # --- القسم الثاني: الأدوية والروتين ---
 st.write("### 💊 أدوية وروتين اليوم")
 
-# تحديد جرعة الغدة أوتوماتيكياً
 levo_label = "Levothyrox 50 µg" if is_levo_50 else "Levothyrox 25 µg"
 levo_done = st.checkbox(f"07:00 - {levo_label} (على الريق)")
 
@@ -44,7 +43,6 @@ repas_done = st.checkbox("15:00 - غداء (بدون ملح تماماً)")
 
 aspegic_done = st.checkbox("15:30 - Aspégic 100 mg (بعد الأكل)")
 
-# إظهار دواء حمض اليوريك فقط في أيامه المحددة
 if is_nadloric:
     nadloric_done = st.checkbox("15:30 - Nadloric 300 mg")
 else:
@@ -58,6 +56,40 @@ tisane_done = st.checkbox("18:15 - تيزانة نعناع")
 st.markdown("---")
 notes = st.text_area("ملاحظات (أعراض، نوم، شكاوى...)")
 
+# --- كود الحفظ الفعلي في جداول جوجل ---
 if st.button("💾 حفظ البيانات ومشاركتها", type="primary"):
-    # هنا سيتم لاحقاً ربط الكود بقاعدة البيانات لحفظ المعلومات
-    st.success("تم الحفظ بنجاح! يمكن لجميع الإخوة رؤية التحديث الآن.")
+    try:
+        # 1. إنشاء الاتصال مع جوجل شيتس
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        
+        # 2. قراءة البيانات السابقة من الجدول (مع ttl=0 لضمان جلب النسخة الأحدث)
+        # تأكد أن اسم التبويب في جوجل شيتس هو "Sheet1" وإلا قم بتغييره هنا
+        existing_data = conn.read(worksheet="Sheet1", ttl=0)
+        
+        # 3. تجميع بيانات اليوم في سطر جديد
+        new_row = pd.DataFrame([{
+            "التاريخ": today.strftime('%d/%m/%Y'),
+            "ضغط الصباح": tension_matin,
+            "ضغط 16:00": tension_16h,
+            "ضغط المساء": tension_soir,
+            "النبض": pouls,
+            "Levothyrox": "تم" if levo_done else "لا",
+            "Irbésartan": "تم" if irbe_done else "لا",
+            "Aspégic": "تم" if aspegic_done else "لا",
+            "Nadloric": "تم" if nadloric_done else "لا",
+            "Amlor": "تم" if amlor_done else "لا",
+            "ملاحظات": notes
+        }])
+        
+        # 4. إضافة السطر الجديد إلى البيانات القديمة
+        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        
+        # 5. إرسال البيانات المحدثة إلى جوجل شيتس
+        conn.update(worksheet="Sheet1", data=updated_df)
+        
+        st.success("تم الحفظ بنجاح في جدول جوجل! يمكن لجميع الإخوة رؤية التحديث الآن.")
+        st.balloons() # احتفال صغير بظهور البالونات عند الحفظ الحقيقي!
+        
+    except Exception as e:
+        st.error("حدث خطأ أثناء الاتصال بالجدول. التفاصيل التقنية:")
+        st.exception(e)
