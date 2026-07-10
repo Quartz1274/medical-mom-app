@@ -166,10 +166,10 @@ with tab_daily:
                     "ملاحظات": notes
                 }
 
-               if row_exists:
+                if row_exists:
                     idx = df[df["التاريخ"] == today_str].index[0]
                     for clé, valeur in nouvelles_donnees.items():
-                        df[clé] = df[clé].astype(object) # Permet à la colonne d'accepter des formats texte comme "11/70"
+                        df[clé] = df[clé].astype(object) # الحل الجذري لمشكلة 11/70
                         df.at[idx, clé] = valeur
                 else:
                     new_row = pd.DataFrame([nouvelles_donnees])
