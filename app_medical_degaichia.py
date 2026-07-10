@@ -39,6 +39,7 @@ with tab_daily:
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
         df = conn.read(spreadsheet=SPREADSHEET_URL, worksheet="Sheet1", ttl=0)
+        df = df.astype(object)
     except Exception:
         # Création des colonnes si le tableau est totalement vide
         colonnes = ["التاريخ", "ضغط الصباح", "ضغط 16:00", "ضغط المساء", "النبض", 
