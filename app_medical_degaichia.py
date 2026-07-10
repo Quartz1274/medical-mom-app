@@ -59,12 +59,14 @@ notes = st.text_area("ملاحظات (أعراض، نوم، شكاوى...)")
 # --- كود الحفظ الفعلي في جداول جوجل ---
 if st.button("💾 حفظ البيانات ومشاركتها", type="primary"):
     try:
+        # رابط الجدول الخاص بك مباشرة لتفادي أي ضياع
+        url = "https://docs.google.com/spreadsheets/d/1wkLT95thxdlubjF1e6d7cVffMkX1M0LqFRCO22dzI5U"
+        
         # 1. إنشاء الاتصال مع جوجل شيتس
         conn = st.connection("gsheets", type=GSheetsConnection)
         
-        # 2. قراءة البيانات السابقة من الجدول (مع ttl=0 لضمان جلب النسخة الأحدث)
-        # تأكد أن اسم التبويب في جوجل شيتس هو "Sheet1" وإلا قم بتغييره هنا
-        existing_data = conn.read(worksheet="Sheet1", ttl=0)
+        # 2. قراءة البيانات السابقة من الجدول مباشرة عبر الرابط
+        existing_data = conn.read(spreadsheet=url, worksheet="Sheet1", ttl=0)
         
         # 3. تجميع بيانات اليوم في سطر جديد
         new_row = pd.DataFrame([{
@@ -84,11 +86,11 @@ if st.button("💾 حفظ البيانات ومشاركتها", type="primary"):
         # 4. إضافة السطر الجديد إلى البيانات القديمة
         updated_df = pd.concat([existing_data, new_row], ignore_index=True)
         
-        # 5. إرسال البيانات المحدثة إلى جوجل شيتس
-        conn.update(worksheet="Sheet1", data=updated_df)
+        # 5. إرسال البيانات المحدثة إلى جوجل شيتس عبر الرابط
+        conn.update(spreadsheet=url, worksheet="Sheet1", data=updated_df)
         
         st.success("تم الحفظ بنجاح في جدول جوجل! يمكن لجميع الإخوة رؤية التحديث الآن.")
-        st.balloons() # احتفال صغير بظهور البالونات عند الحفظ الحقيقي!
+        st.balloons() # احتفال صغير بظهور البالونات
         
     except Exception as e:
         st.error("حدث خطأ أثناء الاتصال بالجدول. التفاصيل التقنية:")
